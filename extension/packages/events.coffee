@@ -30,9 +30,8 @@ checkPassthrough = (event) ->
 
 suppress = false
 suppressEvent = (event) ->
-  if suppress
-    event.preventDefault()
-    event.stopPropagation()
+  event.preventDefault()
+  event.stopPropagation()
 
 removeVimFromTab = (tab, gBrowser) ->
   return unless browser = gBrowser.getBrowserForTab(tab)
@@ -70,7 +69,7 @@ windowsListeners =
       return unless keyStr = keyStrFromEvent(event)
       suppress = vim.onInput(keyStr, event)
 
-      suppressEvent(event)
+      suppressEvent(event) if suppress
 
     catch error
       console.error("#{ error }\n#{ error.stack.replace(/@.+-> /g, '@') }")
@@ -81,11 +80,26 @@ windowsListeners =
   # blacklisted, we must suppress the event, so that 'x' isn't sent to the page. The rule is simple:
   # If the `suppress` flag is `true`, the event should be suppressed, no matter what. It has the
   # highest priority.
-  keypress: suppressEvent
-  keyup:    suppressEvent
+  keypress: (event) -> suppressEvent(event) if suppress
+  keyup: (event) -> suppressEvent(event) if suppress
 
   popupshown:  checkPassthrough
   popuphidden: checkPassthrough
+  
+  focus: (event) ->
+    return unless target = event.originalTarget
+    return unless window = utils.getEventCurrentTabWindow(event)
+    return unless vim = vimBucket.get(window)
+    return unless isEditable = utils.isElementEditable(target)
+    return unless lastLoad = vim.storage.lastLoad
+
+    if (new Date().getTime() - lastLoad.getTime()) < 1000
+      window.setTimeout((-> target.blur()), 0)
+
+  DOMContentLoaded: (event) ->
+    return unless window = utils.getEventCurrentTabWindow(event)
+    return unless vim = vimBucket.get(window)
+    vim.storage.lastLoad = new Date
 
   # When the top level window closes we should release all Vims that were
   # associated with tabs in this window
@@ -104,6 +118,7 @@ windowsListeners =
     return unless window = event.originalTarget?.linkedBrowser?.contentDocument?.defaultView
     return unless vim = vimBucket.get(window)
     updateButton(vim)
+
 
 # This listener works on individual tabs within Chrome Window
 tabsListener =
