@@ -82,7 +82,7 @@ isElementEditable = (element) ->
          element instanceof HTMLSelectElement or \
          element instanceof XULMenuListElement or \
          element.ownerDocument?.designMode?.toLowerCase() == 'on' or \
-         ( element.getAttribute is not undefined and \
+         ( element.getAttribute != undefined and \
            ( element.getAttribute('g_editable') == 'true' or \
              element.getAttribute('contenteditable')?.toLowerCase() == 'true' or \
              element.ownerDocument?.designMode?.toLowerCase() == 'on'))

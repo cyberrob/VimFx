@@ -100,6 +100,9 @@ windowsListeners =
     return unless window = utils.getEventCurrentTabWindow(event)
     return unless vim = vimBucket.get(window)
     vim.storage.lastLoad = new Date
+    if activeElement = window.document.activeElement
+      window.setTimeout((-> activeElement.blur()), 0)
+
 
   # When the top level window closes we should release all Vims that were
   # associated with tabs in this window
